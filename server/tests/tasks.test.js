@@ -9,7 +9,7 @@ beforeAll(async () => {
   connection = await mysql.createConnection({
     host: process.env.DB_HOST || '127.0.0.1',
     user: 'root',
-    password: process.env.DB_PASSWORD'
+    password: process.env.DB_PASSWORD
   });
   await connection.query('CREATE DATABASE IF NOT EXISTS todo_db');
   await connection.query('USE todo_db');
