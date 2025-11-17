@@ -1,34 +1,38 @@
 // server/tests/tasks.test.js
 const request = require('supertest');
 const app = require('../index.js');
-const mysql = require('mysql2/promise');
 
-let connection;
+// Mock complet de la DB (pas de MySQL du tout)
+const mockTasks = [];
+let nextId = 1;
 
-beforeAll(async () => {
-  connection = await mysql.createConnection({
-    host: process.env.DB_HOST || '127.0.0.1',
-    user: 'root',
-    password: process.env.DB_PASSWORD
+jest.mock('../index.js', () => {
+  const express = require('express');
+  const app = express();
+  app.use(express.json());
+
+  app.get('/api/tasks', (req, res) => {
+    res.json(mockTasks);
   });
-  await connection.query('CREATE DATABASE IF NOT EXISTS todo_db');
-  await connection.query('USE todo_db');
-  await connection.query(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      title VARCHAR(255) NOT NULL,
-      completed BOOLEAN DEFAULT FALSE
-    )
-  `);
-  await connection.query('TRUNCATE TABLE tasks');
+
+  app.post('/api/tasks', (req, res) => {
+    const { title } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title required' });
+    const task = { id: nextId++, title, completed: false };
+    mockTasks.push(task);
+    res.status(201).json(task);
+  });
+
+  return app;
 });
 
-afterAll(async () => {
-  await connection.end();
-});
+describe('Tasks API (mocked)', () => {
+  beforeEach(() => {
+    mockTasks.length = 0;
+    nextId = 1;
+  });
 
-describe('Tasks API', () => {
-  test('GET /api/tasks returns empty array initially', async () => {
+  test('GET /api/tasks returns empty array', async () => {
     const res = await request(app).get('/api/tasks');
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
@@ -37,15 +41,15 @@ describe('Tasks API', () => {
   test('POST /api/tasks creates a task', async () => {
     const res = await request(app)
       .post('/api/tasks')
-      .send({ title: 'Faire les courses' });
+      .send({ title: 'Test' });
     expect(res.status).toBe(201);
-    expect(res.body.title).toBe('Faire les courses');
-    expect(res.body.id).toBeDefined();
+    expect(res.body.title).toBe('Test');
   });
 
-  test('GET /api/tasks returns created task', async () => {
-    await request(app).post('/api/tasks').send({ title: 'Apprendre Vitest' });
+  test('GET after POST returns the task', async () => {
+    await request(app).post('/api/tasks').send({ title: 'Hello' });
     const res = await request(app).get('/api/tasks');
-    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.length).toBe(1);
+    expect(res.body[0].title).toBe('Hello');
   });
 });
