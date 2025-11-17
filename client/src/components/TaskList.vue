@@ -19,6 +19,9 @@ const fetchTasks = async () => {
 }
 
 onMounted(fetchTasks)
+
+// Expose la fonction pour que App.vue puisse l’appeler
+defineExpose({ fetchTasks })
 </script>
 
 <template>
