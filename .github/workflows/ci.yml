@@ -7,19 +7,21 @@ on:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
     services:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD:
+          MYSQL_ROOT_PASSWORD: testpassword
           MYSQL_DATABASE: todo_db
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"  
         ports:
           - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=3
+          --health-retries=10               # plus de tentatives
 
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +32,19 @@ jobs:
           node-version: '18'
 
       - name: Install backend dependencies
-        run: cd server && npm install
+        run: cd server && npm ci
+
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -u root --password=testpassword --silent && break
+            echo "MySQL not ready yet, attempt $i/30..."
+            sleep 2
+          done
 
       - name: Run backend tests
         env:
-          DB_HOST: mysql
+          DB_HOST: 127.0.0.1
           DB_USER: root
           DB_PASSWORD:
           DB_NAME: todo_db
