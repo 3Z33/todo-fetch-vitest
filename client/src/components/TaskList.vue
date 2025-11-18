@@ -18,6 +18,17 @@ const fetchTasks = async () => {
   }
 }
 
+const toggleTask = async (id) => {
+  await fetch(`http://localhost:3000/api/tasks/${id}`, { method: 'PATCH' })
+  await fetchTasks()
+}
+
+const deleteTask = async (id) => {
+  if (!confirm('Supprimer cette tâche ?')) return
+  await fetch(`http://localhost:3000/api/tasks/${id}`, { method: 'DELETE' })
+  await fetchTasks()
+}
+
 onMounted(fetchTasks)
 
 // Expose la fonction pour que App.vue puisse l’appeler
@@ -34,10 +45,25 @@ defineExpose({ fetchTasks })
       <li
         v-for="task in tasks"
         :key="task.id"
-        class="flex items-center gap-3 p-3 bg-gray-50 rounded"
+        class="flex items-center justify-between p-3 bg-gray-50 rounded hover:bg-gray-100"
       >
-        <input type="checkbox" :checked="task.completed" class="w-5 h-5" />
-        <span>{{ task.title }}</span>
+        <div class="flex items-center gap-3">
+          <input
+            type="checkbox"
+            :checked="task.completed"
+            @change="toggleTask(task.id)"
+            class="w-5 h-5"
+          />
+          <span :class="{ 'line-through text-gray-500': task.completed }">
+            {{ task.title }}
+          </span>
+        </div>
+        <button
+          @click="deleteTask(task.id)"
+          class="text-red-600 hover:text-red-800 text-sm"
+        >
+          Supprimer
+        </button>
       </li>
       <li v-if="tasks.length === 0" class="text-gray-500 text-center py-8">
         Aucune tâche pour le moment
