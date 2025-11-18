@@ -13,7 +13,7 @@ app.use(express.json());
 const db = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'testpassword',
+  password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'todo_db',
 });
 
@@ -42,6 +42,33 @@ app.post('/api/tasks', async (req, res) => {
       title,
       completed: false,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/tasks/:id (toggle completed)
+app.patch('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query(
+      'UPDATE tasks SET completed = NOT completed WHERE id = ?',
+      [id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/tasks/:id
+app.delete('/api/tasks/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.query('DELETE FROM tasks WHERE id = ?', [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
