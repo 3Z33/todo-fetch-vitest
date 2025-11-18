@@ -8,7 +8,7 @@ const error = ref(null)
 const fetchTasks = async () => {
   try {
     loading.value = true
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`)
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`)
     if (!res.ok) throw new Error('Erreur réseau')
     tasks.value = await res.json()
   } catch (err) {
@@ -19,13 +19,13 @@ const fetchTasks = async () => {
 }
 
 const toggleTask = async (id) => {
-  await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, { method: 'PATCH' })
+  await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, { method: 'PATCH' })
   await fetchTasks()
 }
 
 const deleteTask = async (id) => {
   if (!confirm('Supprimer cette tâche ?')) return
-  await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, { method: 'DELETE' })
+  await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, { method: 'DELETE' })
   await fetchTasks()
 }
 
