@@ -7,7 +7,7 @@ const newTaskTitle = ref('')
 const addTask = async () => {
   if (!newTaskTitle.value.trim()) return
 
-  await fetch('http://localhost:3000/api/tasks', {
+  await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title: newTaskTitle.value })
