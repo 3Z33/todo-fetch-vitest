@@ -6,7 +6,12 @@ const cors = require('cors');
 
 dotenv.config();
 const app = express();
-app.use(cors());
+
+
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
 
 // Pool MySQL
@@ -16,6 +21,14 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'todo_db',
 });
+
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+}
+
 
 // GET /api/tasks
 app.get('/api/tasks', async (req, res) => {
