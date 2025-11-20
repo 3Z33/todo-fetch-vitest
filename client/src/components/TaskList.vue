@@ -8,11 +8,17 @@ const error = ref(null)
 const fetchTasks = async () => {
   try {
     loading.value = true
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`)
-    if (!res.ok) throw new Error('Erreur réseau')
-    tasks.value = await res.json()
+    error.value = null
+
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`) 
+
+    if (!res.ok) throw new Error(`Erreur ${res.status}`)
+    
+    const data = await res.json()
+    tasks.value = data
   } catch (err) {
-    error.value = err.message
+    console.error('Fetch error:', err)
+    error.value = 'Impossible de charger les tâches'
   } finally {
     loading.value = false
   }
