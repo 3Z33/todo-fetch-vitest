@@ -27,8 +27,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   next();
-}
-
+});
 
 // GET /api/tasks
 app.get('/api/tasks', async (req, res) => {
