@@ -1,6 +1,6 @@
 // server/index.js
 const express = require('express');
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
@@ -15,24 +15,39 @@ app.use(cors({
 app.use(express.json());
 
 // Pool MySQL
+
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
+
+pool.query(`
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        completed BOOLEAN DEFAULT FALSE
+    )
+`).catch(err => { console.error('Table creation error:', err); });
+
+/*
 const db = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME || 'todo_db',
-});
+}); */
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   next();
 });
 
 // GET /api/tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM tasks ORDER BY id');
+    const { rows } = await pool.query('SELECT * FROM tasks ORDER BY id');
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -42,18 +57,15 @@ app.get('/api/tasks', async (req, res) => {
 // POST /api/tasks
 app.post('/api/tasks', async (req, res) => {
   const { title } = req.body;
-  if (!title) return res.status(400).json({ error: 'Title required' });
-
+  if (!title || title.trim() === '') {
+    return res.status(400).json({ error: 'Title required' });
+  }
   try {
-    const [result] = await db.query(
-      'INSERT INTO tasks (title) VALUES (?)',
+    const { rows } = await pool.query(
+      'INSERT INTO tasks (title) VALUES ($1) RETURNING *',
       [title]
     );
-    res.status(201).json({
-      id: result.insertId,
-      title,
-      completed: false,
-    });
+    res.status(201).json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -62,33 +74,23 @@ app.post('/api/tasks', async (req, res) => {
 // PATCH /api/tasks/:id (toggle completed)
 app.patch('/api/tasks/:id', async (req, res) => {
   const { id } = req.params;
-  try {
-    const [result] = await db.query(
-      'UPDATE tasks SET completed = NOT completed WHERE id = ?',
-      [id]
-    );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { rows } = await pool.query(
+    'UPDATE tasks SET completed = NOT completed WHERE id = $1 RETURNING *',
+    [id]
+  );
+  rows.length ? res.json({ success: true }) : res.status(404).json({ error: 'Not found' });
 });
 
 // DELETE /api/tasks/:id
 app.delete('/api/tasks/:id', async (req, res) => {
   const { id } = req.params;
-  try {
-    const [result] = await db.query('DELETE FROM tasks WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Not found' });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const { rowCount } = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  rowCount ? res.json({ success: true }) : res.status(404).json({ error: 'Not found' });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on PORT : ${PORT}`);
 });
 
 module.exports = app; // Pour Supertest
