@@ -46,7 +46,7 @@ defineExpose({ fetchTasks })
     <h2 class="text-2xl font-semibold mb-4">Mes tâches</h2>
 
     <div v-if="loading" class="text-center py-8">Chargement...</div>
-    <div v-else-if="error" class="text-red-600 text-center">{{ error }}</div>
+    <!-- <div v-else-if="error" class="text-red-600 text-center">{{ error }}</div> -->
     <ul v-else class="space-y-3">
       <li
         v-for="task in tasks"
