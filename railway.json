@@ -1,0 +1,6 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "start": "cd server && node index.js"
+}
